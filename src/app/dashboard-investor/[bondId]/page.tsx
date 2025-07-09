@@ -79,6 +79,7 @@ export default function InvestorBondDetailPage() {
                         schedule={bond.result.schedule}
                         currency={bond.formValues.currency}
                         viewAs="investor"
+                        bondPrice={metrics.bondPrice}
                     />
                 </div>
                  <div className="lg:col-span-2">

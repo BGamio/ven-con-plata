@@ -131,26 +131,24 @@ export function calculateAmortization(
         : balance / remainingPeriods;
 
     for (let i = 1; i <= remainingPeriods; i++) {
+      const isLastPeriod = i === remainingPeriods;
       const initialBalance = balance;
       const interest = initialBalance * periodicCouponRate;
-      let principal: number;
-      let payment: number;
-
-      if (i === remainingPeriods) {
-        // Last period: The principal is the full remaining balance.
-        principal = initialBalance;
-        const redemptionPremiumAmount = faceValue * (redemptionPremium / 100);
-        // The final "payment" includes the principal repayment, final interest, and the redemption premium.
-        payment = principal + interest + redemptionPremiumAmount;
-      } else {
-        // Regular period: The payment is the calculated installment.
-        payment = installment;
-        principal = payment - interest;
+      
+      let principal = isLastPeriod ? initialBalance : installment - interest;
+      if (initialBalance - principal < 0.005) { // Precision adjustment
+          principal = initialBalance;
       }
       
+      let payment = principal + interest;
+      
+      if (isLastPeriod) {
+        const redemptionPremiumAmount = faceValue * (redemptionPremium / 100);
+        payment += redemptionPremiumAmount;
+      }
+
       balance -= principal;
 
-      // Issuer's cash flow is the outflow of the payment.
       const issuerCf = -payment;
       
       schedule.push({
@@ -204,9 +202,10 @@ export function calculateInvestorMetrics(bond: SavedBond): InvestorMetrics {
   const { formValues, result } = bond;
   const { marketValue, costOfCapital, paymentFrequency } = formValues;
 
+  const investorFutureCashFlows = result.schedule.map(p => -p.issuerCashFlow)
   const investorCashFlows = [
     -marketValue,
-    ...result.schedule.map(p => -p.issuerCashFlow)
+    ...investorFutureCashFlows
   ];
 
   const periodsPerYear = periodsPerYearMap[paymentFrequency];
@@ -214,9 +213,13 @@ export function calculateInvestorMetrics(bond: SavedBond): InvestorMetrics {
 
   const periodicIRR = calculateIRR(investorCashFlows);
   const npv = calculateNPV(periodicCOK, investorCashFlows);
+  
+  // The bond price is the PV of future cash flows at the market discount rate (COK)
+  // It can also be calculated as: NPV + Initial Investment
+  const bondPrice = npv + marketValue; 
 
   const irr = isNaN(periodicIRR) ? "N/A" : (periodicIRR * periodsPerYear).toString();
   const trea = isNaN(periodicIRR) ? "N/A" : (Math.pow(1 + periodicIRR, periodsPerYear) - 1).toString();
 
-  return { npv, irr, trea };
+  return { npv, irr, trea, bondPrice };
 }

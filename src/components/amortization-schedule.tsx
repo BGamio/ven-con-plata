@@ -7,6 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AmortizationPeriod } from "@/lib/types";
@@ -19,12 +20,14 @@ interface AmortizationScheduleProps {
   schedule: AmortizationPeriod[];
   currency: "USD" | "PEN" | "EUR";
   viewAs?: "issuer" | "investor";
+  bondPrice?: number;
 }
 
 export function AmortizationSchedule({
   schedule,
   currency,
   viewAs = "issuer",
+  bondPrice,
 }: AmortizationScheduleProps) {
   const { toast } = useToast();
 
@@ -135,6 +138,14 @@ export function AmortizationSchedule({
                 </TableRow>
               ))}
             </TableBody>
+             {bondPrice !== undefined && viewAs === 'investor' && (
+                <TableFooter>
+                    <TableRow className="bg-muted/50 hover:bg-muted/80">
+                        <TableCell colSpan={6} className="text-right font-semibold">Precio del Bono (Calculado con COK):</TableCell>
+                        <TableCell className="text-right font-bold">{formatCurrency(bondPrice)}</TableCell>
+                    </TableRow>
+                </TableFooter>
+            )}
           </Table>
         </ScrollArea>
       </CardContent>

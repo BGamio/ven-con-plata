@@ -62,4 +62,5 @@ export interface InvestorMetrics {
   npv: number;
   irr: string;
   trea: string;
+  bondPrice: number;
 }
