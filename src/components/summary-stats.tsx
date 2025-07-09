@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AmortizationResult } from "@/lib/types";
-import { Coins, Landmark, Percent } from "lucide-react";
+import { Coins, Landmark, Percent, Activity } from "lucide-react";
 
 interface SummaryStatsProps {
   summary: AmortizationResult["summary"];
@@ -45,12 +45,20 @@ export function SummaryStats({ summary }: SummaryStatsProps) {
       value: formatPercent(summary.tcea),
       icon: <Landmark className="h-6 w-6" />,
     },
+    {
+      title: "Convexidad Anualizada",
+      value:
+        typeof summary.convexity === "number"
+          ? summary.convexity.toFixed(4)
+          : "N/A",
+      icon: <Activity className="h-6 w-6" />,
+    },
   ];
 
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">Resultados Financieros</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

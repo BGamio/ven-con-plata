@@ -36,6 +36,7 @@ export interface AmortizationResult {
     npv: number;
     irr: string;
     tcea: string;
+    convexity: number | "N/A";
     totalPayment: number;
     totalInterest: number;
     totalPrincipal: number;

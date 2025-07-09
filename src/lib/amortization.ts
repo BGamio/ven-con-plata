@@ -68,6 +68,7 @@ export function calculateAmortization(
         npv: 0,
         irr: "N/A",
         tcea: "N/A",
+        convexity: "N/A",
         totalInterest: 0,
         totalPrincipal: 0,
         totalPayment: 0,
@@ -172,8 +173,25 @@ export function calculateAmortization(
   const irr = isNaN(periodicIRR) ? "N/A" : (periodicIRR * periodsPerYear).toString();
   const tcea = isNaN(periodicIRR) ? "N/A" : (Math.pow(1 + periodicIRR, periodsPerYear) - 1).toString();
 
+  let convexity: number | "N/A" = "N/A";
+  if (!isNaN(periodicIRR)) {
+    const convexitySum = issuerCashFlows
+      .slice(1) // Exclude initial investment at t=0
+      .reduce((acc, cf, index) => {
+        const t = index + 1;
+        const discountedCf = (-cf) / Math.pow(1 + periodicIRR, t);
+        return acc + discountedCf * (t * t + t);
+      }, 0);
+    
+    if (issuerInitialCashFlow > 0 && Math.pow(1 + periodicIRR, 2) > 0) {
+        const convexityResult = convexitySum / (issuerInitialCashFlow * Math.pow(1 + periodicIRR, 2));
+        const annualizedConvexity = convexityResult / Math.pow(periodsPerYear, 2);
+        convexity = annualizedConvexity;
+    }
+  }
+
   return {
     schedule,
-    summary: { npv, irr, tcea, totalInterest, totalPrincipal, totalPayment, currency },
+    summary: { npv, irr, tcea, convexity, totalInterest, totalPrincipal, totalPayment, currency },
   };
 }

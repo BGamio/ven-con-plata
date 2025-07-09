@@ -1,43 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { BondFormValues, SavedBond } from "@/lib/types";
-import { calculateAmortization } from "@/lib/amortization";
+import Link from "next/link";
+import { SavedBond } from "@/lib/types";
 import { AppHeader } from "@/components/app-header";
-import { BondForm } from "@/components/bond-form";
 import { BondCalculator } from "@/components/bond-calculator";
 import { SavedBondsList } from "@/components/saved-bonds-list";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, LogOut } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const [savedBonds, setSavedBonds] = useState<SavedBond[]>([]);
   const [selectedBond, setSelectedBond] = useState<SavedBond | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const router = useRouter();
 
-  const handleCalculate = (data: BondFormValues) => {
-    const calculationResult = calculateAmortization(data);
-    const newBond: SavedBond = {
-      id: `bond_${new Date().getTime()}`,
-      formValues: data,
-      result: calculationResult,
-    };
-
-    setSavedBonds((prevBonds) => [newBond, ...prevBonds]);
-    setSelectedBond(newBond);
-    setIsFormOpen(false); // Close the dialog after calculation
-  };
+  useEffect(() => {
+    const storedBonds = localStorage.getItem("savedBonds");
+    if (storedBonds) {
+      try {
+        const bonds: SavedBond[] = JSON.parse(storedBonds);
+        setSavedBonds(bonds);
+        if (bonds.length > 0) {
+          // If no bond is selected, or selected one is not in the list, select the first one.
+          const currentSelectedExists = bonds.some(b => b.id === selectedBond?.id);
+          if (!currentSelectedExists) {
+             setSelectedBond(bonds[0]);
+          }
+        } else {
+            setSelectedBond(null);
+        }
+      } catch (error) {
+        console.error("Failed to parse bonds from localStorage", error);
+        localStorage.removeItem("savedBonds");
+      }
+    }
+  }, []);
 
   const handleSelectBond = (bondId: string) => {
     const bond = savedBonds.find((b) => b.id === bondId);
@@ -47,7 +46,7 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    // In a real app, clear session/token
+    localStorage.removeItem("savedBonds");
     router.push("/");
   };
 
@@ -66,25 +65,12 @@ export default function DashboardPage() {
       <main className="flex-grow container mx-auto p-4 md:p-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">Mis Bonos (Emisor)</h2>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Generar Bono
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Generar Nuevo Bono</DialogTitle>
-                <DialogDescription>
-                  Complete los siguientes campos para calcular y guardar un nuevo bono.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="max-h-[80vh] overflow-y-auto p-1 pr-3">
-                <BondForm onCalculate={handleCalculate} />
-              </div>
-            </DialogContent>
-          </Dialog>
+            <Button asChild>
+                <Link href="/dashboard/new">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Generar Bono
+                </Link>
+            </Button>
         </div>
 
         {savedBonds.length === 0 ? (
@@ -96,9 +82,11 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-                <Button size="lg" onClick={() => setIsFormOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Generar Bono
+                <Button size="lg" asChild>
+                    <Link href="/dashboard/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Generar Bono
+                    </Link>
                 </Button>
             </CardContent>
           </Card>
