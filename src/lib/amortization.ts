@@ -133,13 +133,19 @@ export function calculateAmortization(
     for (let i = 1; i <= remainingPeriods; i++) {
       const initialBalance = balance;
       const interest = initialBalance * periodicCouponRate;
-      let principal = installment - interest;
-      let payment = installment;
+      let principal;
+      let payment;
 
       if (i === remainingPeriods) {
+        // For the last period, the principal is the entire remaining balance.
         principal = initialBalance;
+        // The payment is what's needed to cover the last principal and interest.
         payment = principal + interest;
+      } else {
+        payment = installment;
+        principal = payment - interest;
       }
+      
       balance -= principal;
 
       let issuerCf = -payment;
