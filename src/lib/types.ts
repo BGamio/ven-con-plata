@@ -17,7 +17,7 @@ export interface BondFormValues {
     | "monthly";
   totalGracePeriods: number;
   partialGracePeriods: number;
-  currency: "USD" | "PEN";
+  currency: "USD" | "PEN" | "EUR";
 }
 
 export interface AmortizationPeriod {
@@ -39,6 +39,6 @@ export interface AmortizationResult {
     totalPayment: number;
     totalInterest: number;
     totalPrincipal: number;
-    currency: "USD" | "PEN";
+    currency: "USD" | "PEN" | "EUR";
   };
 }

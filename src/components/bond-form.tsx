@@ -68,7 +68,7 @@ const formSchema = z.object({
   ]),
   totalGracePeriods: z.coerce.number().int().min(0, "Debe ser 0 o mayor"),
   partialGracePeriods: z.coerce.number().int().min(0, "Debe ser 0 o mayor"),
-  currency: z.enum(["USD", "PEN"]),
+  currency: z.enum(["USD", "PEN", "EUR"]),
 });
 
 interface BondFormProps {
@@ -138,6 +138,7 @@ export function BondForm({ onCalculate }: BondFormProps) {
                     <SelectContent>
                       <SelectItem value="USD">USD</SelectItem>
                       <SelectItem value="PEN">PEN</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

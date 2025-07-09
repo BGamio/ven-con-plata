@@ -17,7 +17,7 @@ import { ScrollArea } from "./ui/scroll-area";
 
 interface AmortizationScheduleProps {
   schedule: AmortizationPeriod[];
-  currency: "USD" | "PEN";
+  currency: "USD" | "PEN" | "EUR";
 }
 
 export function AmortizationSchedule({
@@ -27,12 +27,15 @@ export function AmortizationSchedule({
   const { toast } = useToast();
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat(currency === "PEN" ? "es-PE" : "en-US", {
-      style: "currency",
-      currency: currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return new Intl.NumberFormat(
+      currency === "PEN" ? "es-PE" : currency === "EUR" ? "de-DE" : "en-US",
+      {
+        style: "currency",
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }
+    ).format(value);
   };
 
   const handleExport = () => {

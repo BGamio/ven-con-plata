@@ -11,7 +11,11 @@ interface SummaryStatsProps {
 export function SummaryStats({ summary }: SummaryStatsProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat(
-      summary.currency === "PEN" ? "es-PE" : "en-US",
+      summary.currency === "PEN"
+        ? "es-PE"
+        : summary.currency === "EUR"
+        ? "de-DE"
+        : "en-US",
       {
         style: "currency",
         currency: summary.currency,
