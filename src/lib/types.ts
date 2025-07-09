@@ -42,3 +42,9 @@ export interface AmortizationResult {
     currency: "USD" | "PEN" | "EUR";
   };
 }
+
+export interface SavedBond {
+  id: string;
+  formValues: BondFormValues;
+  result: AmortizationResult;
+}
