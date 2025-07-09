@@ -46,7 +46,6 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("savedBonds");
     router.push("/");
   };
 
