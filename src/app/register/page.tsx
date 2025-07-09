@@ -15,24 +15,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Landmark } from "lucide-react";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple validation for prototype
     if (email && password) {
+      // In a real app, you'd handle registration logic here
       router.push("/dashboard");
     } else {
-      alert("Por favor, ingrese su correo y contraseña.");
+      alert("Por favor, complete todos los campos.");
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-       <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-8">
           <div className="bg-primary text-primary-foreground p-3 rounded-lg">
             <Landmark className="h-8 w-8" />
           </div>
@@ -42,13 +42,13 @@ export default function LoginPage() {
         </div>
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader>
-          <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
+          <CardTitle className="text-2xl">Crear una Cuenta</CardTitle>
           <CardDescription>
-            Ingrese su correo electrónico para iniciar sesión en su cuenta.
+            Ingrese sus datos para registrarse.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="grid gap-4">
+          <form onSubmit={handleRegister} className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Correo Electrónico</Label>
               <Input
@@ -71,13 +71,13 @@ export default function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full">
-              Iniciar Sesión
+              Registrarse
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            ¿No tienes una cuenta?{" "}
-            <Link href="/register" className="underline">
-              Regístrate
+            ¿Ya tienes una cuenta?{" "}
+            <Link href="/" className="underline">
+              Inicia Sesión
             </Link>
           </div>
         </CardContent>

@@ -100,11 +100,8 @@ export function BondForm({ onCalculate }: BondFormProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Parámetros del Bono (Emisor)</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card className="border-0 shadow-none">
+      <CardContent className="p-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -348,7 +345,7 @@ export function BondForm({ onCalculate }: BondFormProps) {
 
             <Button type="submit" className="w-full" size="lg">
               <Calculator className="mr-2 h-4 w-4" />
-              Calcular Flujo de Caja
+              Guardar y Calcular Bono
             </Button>
           </form>
         </Form>
