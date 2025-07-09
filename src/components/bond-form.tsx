@@ -273,7 +273,7 @@ export function BondForm({ onCalculate }: BondFormProps) {
                 name="costOfCapital"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>COK Anual (%)</FormLabel>
+                    <FormLabel>Tasa Descuento (COK - TNA %)</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.1" {...field} />
                     </FormControl>
