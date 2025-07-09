@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SavedBond } from "@/lib/types";
+import { SavedBond, User } from "@/lib/types";
 import { AppHeader } from "@/components/app-header";
 import { BondCalculator } from "@/components/bond-calculator";
 import { SavedBondsList } from "@/components/saved-bonds-list";
@@ -17,13 +17,19 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Auth guard
+    const session = localStorage.getItem("session");
+    if (!session || (session && JSON.parse(session).role !== 'emisor')) {
+      router.push("/");
+      return;
+    }
+    
     const storedBonds = localStorage.getItem("savedBonds");
     if (storedBonds) {
       try {
         const bonds: SavedBond[] = JSON.parse(storedBonds);
         setSavedBonds(bonds);
         if (bonds.length > 0) {
-          // If no bond is selected, or selected one is not in the list, select the first one.
           const currentSelectedExists = bonds.some(b => b.id === selectedBond?.id);
           if (!currentSelectedExists) {
              setSelectedBond(bonds[0]);
@@ -33,7 +39,6 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error("Failed to parse bonds from localStorage", error);
-        localStorage.removeItem("savedBonds");
       }
     }
   }, []);
@@ -46,6 +51,7 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("session");
     router.push("/");
   };
 

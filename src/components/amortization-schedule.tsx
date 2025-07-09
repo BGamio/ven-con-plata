@@ -18,11 +18,13 @@ import { ScrollArea } from "./ui/scroll-area";
 interface AmortizationScheduleProps {
   schedule: AmortizationPeriod[];
   currency: "USD" | "PEN" | "EUR";
+  viewAs?: "issuer" | "investor";
 }
 
 export function AmortizationSchedule({
   schedule,
   currency,
+  viewAs = "issuer",
 }: AmortizationScheduleProps) {
   const { toast } = useToast();
 
@@ -46,7 +48,7 @@ export function AmortizationSchedule({
       "Amortización",
       "Cuota",
       "Saldo Final",
-      "Flujo Emisor",
+      viewAs === 'issuer' ? "Flujo Emisor" : "Flujo Inversionista",
     ];
     const csvContent = [
       headers.join(","),
@@ -58,7 +60,7 @@ export function AmortizationSchedule({
           row.principal.toFixed(2),
           row.payment.toFixed(2),
           row.finalBalance.toFixed(2),
-          row.issuerCashFlow.toFixed(2),
+          (viewAs === 'issuer' ? row.issuerCashFlow : -row.issuerCashFlow).toFixed(2),
         ].join(",")
       ),
     ].join("\n");
@@ -103,7 +105,7 @@ export function AmortizationSchedule({
                 <TableHead className="text-right">Amortización</TableHead>
                 <TableHead className="text-right">Cuota</TableHead>
                 <TableHead className="text-right">Saldo Final</TableHead>
-                <TableHead className="text-right">Flujo Emisor</TableHead>
+                <TableHead className="text-right">{viewAs === 'issuer' ? 'Flujo Emisor' : 'Flujo Inversionista'}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,7 +130,7 @@ export function AmortizationSchedule({
                     {formatCurrency(row.finalBalance)}
                   </TableCell>
                   <TableCell className="text-right font-semibold">
-                    {formatCurrency(row.issuerCashFlow)}
+                    {formatCurrency(viewAs === 'issuer' ? row.issuerCashFlow : -row.issuerCashFlow)}
                   </TableCell>
                 </TableRow>
               ))}

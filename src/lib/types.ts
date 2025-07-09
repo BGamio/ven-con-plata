@@ -1,3 +1,11 @@
+export type UserRole = "emisor" | "inversor";
+
+export interface User {
+  email: string;
+  password: string;
+  role: UserRole;
+}
+
 export interface BondFormValues {
   companyName: string;
   costOfCapital: number;
@@ -48,4 +56,10 @@ export interface SavedBond {
   id: string;
   formValues: BondFormValues;
   result: AmortizationResult;
+}
+
+export interface InvestorMetrics {
+  npv: number;
+  irr: string;
+  trea: string;
 }

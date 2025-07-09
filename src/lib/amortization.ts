@@ -1,4 +1,4 @@
-import type { AmortizationResult, BondFormValues, AmortizationPeriod } from "./types";
+import type { AmortizationResult, BondFormValues, AmortizationPeriod, SavedBond, InvestorMetrics } from "./types";
 
 function calculateNPV(rate: number, values: number[]): number {
   if (rate <= -1) {
@@ -33,6 +33,15 @@ function calculateIRR(
   return NaN; // Failed to converge
 }
 
+const periodsPerYearMap = {
+    monthly: 12,
+    bimonthly: 6,
+    quarterly: 4,
+    quadrimester: 3,
+    "semi-annually": 2,
+    annually: 1,
+};
+
 export function calculateAmortization(
   data: BondFormValues
 ): AmortizationResult {
@@ -50,14 +59,6 @@ export function calculateAmortization(
     currency,
   } = data;
 
-  const periodsPerYearMap = {
-    monthly: 12,
-    bimonthly: 6,
-    quarterly: 4,
-    quadrimester: 3,
-    "semi-annually": 2,
-    annually: 1,
-  };
   const periodsPerYear = periodsPerYearMap[paymentFrequency];
   const totalPeriods = termInYears * periodsPerYear;
 
@@ -194,4 +195,26 @@ export function calculateAmortization(
     schedule,
     summary: { npv, irr, tcea, convexity, totalInterest, totalPrincipal, totalPayment, currency },
   };
+}
+
+
+export function calculateInvestorMetrics(bond: SavedBond): InvestorMetrics {
+  const { formValues, result } = bond;
+  const { marketValue, costOfCapital, paymentFrequency } = formValues;
+
+  const investorCashFlows = [
+    -marketValue,
+    ...result.schedule.map(p => -p.issuerCashFlow)
+  ];
+
+  const periodsPerYear = periodsPerYearMap[paymentFrequency];
+  const periodicCOK = (costOfCapital / 100) / periodsPerYear;
+
+  const periodicIRR = calculateIRR(investorCashFlows);
+  const npv = calculateNPV(periodicCOK, investorCashFlows);
+
+  const irr = isNaN(periodicIRR) ? "N/A" : (periodicIRR * periodsPerYear).toString();
+  const trea = isNaN(periodicIRR) ? "N/A" : (Math.pow(1 + periodicIRR, periodsPerYear) - 1).toString();
+
+  return { npv, irr, trea };
 }

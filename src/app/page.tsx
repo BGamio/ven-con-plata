@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Landmark } from "lucide-react";
+import { User } from "@/lib/types";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,29 +23,39 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple validation for prototype
-    if (email && password) {
-      router.push("/dashboard");
+    const storedUsers = localStorage.getItem("users");
+    const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
+    const user = users.find(
+      (u) => u.email === email && u.password === password
+    );
+
+    if (user) {
+      localStorage.setItem("session", JSON.stringify(user));
+      if (user.role === "emisor") {
+        router.push("/dashboard");
+      } else {
+        router.push("/dashboard-investor");
+      }
     } else {
-      alert("Por favor, ingrese su correo y contraseña.");
+      alert("Credenciales incorrectas o usuario no registrado.");
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-       <div className="flex items-center gap-3 mb-8">
-          <div className="bg-primary text-primary-foreground p-3 rounded-lg">
-            <Landmark className="h-8 w-8" />
-          </div>
-          <h1 className="text-4xl font-bold text-foreground">
-            Calculadora de Bonos
-          </h1>
+      <div className="flex items-center gap-3 mb-8">
+        <div className="bg-primary text-primary-foreground p-3 rounded-lg">
+          <Landmark className="h-8 w-8" />
         </div>
+        <h1 className="text-4xl font-bold text-foreground">
+          Calculadora de Bonos
+        </h1>
+      </div>
       <Card className="mx-auto max-w-sm w-full">
         <CardHeader>
           <CardTitle className="text-2xl">Iniciar Sesión</CardTitle>
           <CardDescription>
-            Ingrese su correo electrónico para iniciar sesión en su cuenta.
+            Ingrese su correo para acceder a su panel.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -62,10 +73,10 @@ export default function LoginPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Contraseña</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
+              <Input
+                id="password"
+                type="password"
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />

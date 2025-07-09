@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from 'react';
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { BondForm } from "@/components/bond-form";
@@ -11,6 +12,14 @@ import { ArrowLeft } from "lucide-react";
 
 export default function NewBondPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    // Auth guard
+    const session = localStorage.getItem("session");
+    if (!session || (session && JSON.parse(session).role !== 'emisor')) {
+      router.push("/");
+    }
+  }, [router]);
 
   const handleCalculate = (data: BondFormValues) => {
     const calculationResult = calculateAmortization(data);
