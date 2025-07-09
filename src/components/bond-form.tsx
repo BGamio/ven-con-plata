@@ -260,7 +260,7 @@ export function BondForm({ onCalculate }: BondFormProps) {
                 name="couponRate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tasa Cupón Anual (%)</FormLabel>
+                    <FormLabel>Tasa Cupón (TNA %)</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.1" {...field} />
                     </FormControl>
