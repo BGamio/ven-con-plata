@@ -133,22 +133,25 @@ export function calculateAmortization(
     for (let i = 1; i <= remainingPeriods; i++) {
       const initialBalance = balance;
       const interest = initialBalance * periodicCouponRate;
-      let principal;
-      let payment;
+      let principal: number;
+      let payment: number;
 
       if (i === remainingPeriods) {
-        // For the last period, the principal is the entire remaining balance.
+        // Last period: The principal is the full remaining balance.
         principal = initialBalance;
-        // The payment is what's needed to cover the last principal and interest.
-        payment = principal + interest;
+        const redemptionPremiumAmount = faceValue * (redemptionPremium / 100);
+        // The final "payment" includes the principal repayment, final interest, and the redemption premium.
+        payment = principal + interest + redemptionPremiumAmount;
       } else {
+        // Regular period: The payment is the calculated installment.
         payment = installment;
         principal = payment - interest;
       }
       
       balance -= principal;
 
-      let issuerCf = -payment;
+      // Issuer's cash flow is the outflow of the payment.
+      const issuerCf = -payment;
       
       schedule.push({
         period: graceDuration + i,
@@ -165,13 +168,6 @@ export function calculateAmortization(
       totalPrincipal += principal;
       totalPayment += payment;
     }
-  }
-
-  // Redemption Premium at maturity
-  if (totalPeriods > 0 && issuerCashFlows.length > 1) {
-      const premiumAmount = faceValue * (redemptionPremium / 100);
-      issuerCashFlows[issuerCashFlows.length -1] -= premiumAmount;
-      schedule[schedule.length - 1].issuerCashFlow -= premiumAmount;
   }
 
   const periodicIRR = calculateIRR(issuerCashFlows);
