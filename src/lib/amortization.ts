@@ -1,110 +1,179 @@
-import { differenceInMonths, differenceInQuarters, differenceInYears } from "date-fns";
-import type { AmortizationResult, BondFormValues } from "./types";
+import type { AmortizationResult, BondFormValues, AmortizationPeriod } from "./types";
 
-function getPeriods(
-  startDate: Date,
-  endDate: Date,
-  frequency: BondFormValues["paymentFrequency"]
-): { periodsPerYear: number; totalPeriods: number } {
-  switch (frequency) {
-    case "annually":
-      return { periodsPerYear: 1, totalPeriods: differenceInYears(endDate, startDate) };
-    case "semi-annually":
-      return { periodsPerYear: 2, totalPeriods: differenceInYears(endDate, startDate) * 2 };
-    case "quarterly":
-      return { periodsPerYear: 4, totalPeriods: differenceInQuarters(endDate, startDate) };
-    case "monthly":
-      return { periodsPerYear: 12, totalPeriods: differenceInMonths(endDate, startDate) };
+function calculateNPV(rate: number, values: number[]): number {
+  if (rate <= -1) {
+    rate = -0.99999999; // Avoid division by zero or negative powers
   }
+  return values.reduce((acc, val, i) => acc + val / Math.pow(1 + rate, i), 0);
 }
 
-export function calculateFrenchAmortization(
+function calculateIRR(
+  values: number[],
+  guess = 0.1,
+  maxIter = 100,
+  tolerance = 1e-7
+): number {
+  let rate = guess;
+
+  for (let i = 0; i < maxIter; i++) {
+    const npv = calculateNPV(rate, values);
+    if (Math.abs(npv) < tolerance) {
+      return rate;
+    }
+
+    const derivative = values.reduce(
+      (acc, val, j) => (j > 0 ? acc - (j * val) / Math.pow(1 + rate, j + 1) : acc),
+      0
+    );
+    if (Math.abs(derivative) < 1e-7) {
+      break; 
+    }
+    rate = rate - npv / derivative;
+  }
+  return NaN; // Failed to converge
+}
+
+export function calculateAmortization(
   data: BondFormValues
 ): AmortizationResult {
-  const startDate = new Date();
-  const { periodsPerYear, totalPeriods } = getPeriods(
-    startDate,
-    data.maturityDate,
-    data.paymentFrequency
-  );
+  const {
+    faceValue,
+    marketValue,
+    couponRate,
+    costOfCapital,
+    issuerInitialCosts,
+    redemptionPremium,
+    paymentFrequency,
+    termInYears,
+    totalGracePeriods,
+    partialGracePeriods,
+    currency,
+  } = data;
+
+  const periodsPerYearMap = {
+    monthly: 12,
+    bimonthly: 6,
+    quarterly: 4,
+    quadrimester: 3,
+    "semi-annually": 2,
+    annually: 1,
+  };
+  const periodsPerYear = periodsPerYearMap[paymentFrequency];
+  const totalPeriods = termInYears * periodsPerYear;
 
   if (totalPeriods <= 0) {
-    return { schedule: [], summary: { totalInterest: 0, totalPrincipal: 0, totalPayment: 0 } };
+    return {
+      schedule: [],
+      summary: {
+        npv: 0,
+        irr: "N/A",
+        tcea: "N/A",
+        totalInterest: 0,
+        totalPrincipal: 0,
+        totalPayment: 0,
+        currency,
+      },
+    };
   }
 
-  const periodicRate = (data.couponRate / 100) / periodsPerYear;
-  let balance = data.faceValue;
+  const periodicCouponRate = (couponRate / 100) / periodsPerYear;
+  const periodicCOK = (costOfCapital / 100) / periodsPerYear;
 
-  const schedule: AmortizationResult["schedule"] = [];
+  const issuerInitialCashFlow = marketValue * (1 - issuerInitialCosts / 100);
+  const issuerCashFlows: number[] = [issuerInitialCashFlow];
+  const schedule: AmortizationPeriod[] = [];
+
+  let balance = faceValue;
   let totalInterest = 0;
   let totalPrincipal = 0;
+  let totalPayment = 0;
 
-  const graceDuration = Math.min(data.gracePeriodDuration, totalPeriods);
+  const graceDuration = Math.min(totalGracePeriods + partialGracePeriods, totalPeriods);
 
-  // Grace Period
+  // Grace Periods
   for (let i = 1; i <= graceDuration; i++) {
-    const interest = balance * periodicRate;
-    if (data.gracePeriodType === "partial") {
-      schedule.push({
-        period: i,
-        payment: interest,
-        interest: interest,
-        principal: 0,
-        balance: balance,
-      });
-      totalInterest += interest;
-    } else if (data.gracePeriodType === "total") {
+    const initialBalance = balance;
+    const interest = initialBalance * periodicCouponRate;
+    let payment = 0;
+    let principal = 0;
+    let issuerCf = 0;
+
+    if (i <= totalGracePeriods) { // Total grace period
       balance += interest;
-      schedule.push({
-        period: i,
-        payment: 0,
-        interest: interest,
-        principal: 0,
-        balance: balance,
-      });
-      totalInterest += interest;
+    } else { // Partial grace period
+      payment = interest;
+      issuerCf = -payment;
     }
+    
+    schedule.push({
+      period: i,
+      initialBalance,
+      interest,
+      principal,
+      payment,
+      finalBalance: balance,
+      issuerCashFlow: issuerCf,
+    });
+    issuerCashFlows.push(issuerCf);
+    totalInterest += interest;
+    totalPayment += payment;
   }
 
-  // Post-Grace Period
+  // Regular Periods
   const remainingPeriods = totalPeriods - graceDuration;
   if (remainingPeriods > 0) {
     const installment =
-      periodicRate > 0
-        ? (balance * (periodicRate * Math.pow(1 + periodicRate, remainingPeriods))) /
-          (Math.pow(1 + periodicRate, remainingPeriods) - 1)
+      periodicCouponRate > 0
+        ? (balance * (periodicCouponRate * Math.pow(1 + periodicCouponRate, remainingPeriods))) /
+          (Math.pow(1 + periodicCouponRate, remainingPeriods) - 1)
         : balance / remainingPeriods;
 
     for (let i = 1; i <= remainingPeriods; i++) {
-      const interest = balance * periodicRate;
+      const initialBalance = balance;
+      const interest = initialBalance * periodicCouponRate;
       let principal = installment - interest;
-      let currentPayment = installment;
+      let payment = installment;
 
-      // Adjust last payment to clear balance
       if (i === remainingPeriods) {
-        principal = balance;
-        currentPayment = principal + interest;
+        principal = initialBalance;
+        payment = principal + interest;
       }
-
       balance -= principal;
 
+      let issuerCf = -payment;
+      
       schedule.push({
         period: graceDuration + i,
-        payment: currentPayment,
-        interest: interest,
-        principal: principal,
-        balance: balance < 0.005 ? 0 : balance, // Prevent small negative balances
+        initialBalance,
+        interest,
+        principal,
+        payment,
+        finalBalance: balance < 0.005 ? 0 : balance,
+        issuerCashFlow: issuerCf,
       });
+      issuerCashFlows.push(issuerCf);
 
       totalInterest += interest;
       totalPrincipal += principal;
+      totalPayment += payment;
     }
   }
 
-  const totalPayment = totalInterest + totalPrincipal;
+  // Redemption Premium at maturity
+  if (totalPeriods > 0 && issuerCashFlows.length > 1) {
+      const premiumAmount = faceValue * (redemptionPremium / 100);
+      issuerCashFlows[issuerCashFlows.length -1] -= premiumAmount;
+      schedule[schedule.length - 1].issuerCashFlow -= premiumAmount;
+  }
+
+  const periodicIRR = calculateIRR(issuerCashFlows);
+  const npv = calculateNPV(periodicCOK, issuerCashFlows);
+  
+  const irr = isNaN(periodicIRR) ? "N/A" : (periodicIRR * periodsPerYear).toString();
+  const tcea = isNaN(periodicIRR) ? "N/A" : (Math.pow(1 + periodicIRR, periodsPerYear) - 1).toString();
 
   return {
     schedule,
-    summary: { totalInterest, totalPrincipal, totalPayment },
+    summary: { npv, irr, tcea, totalInterest, totalPrincipal, totalPayment, currency },
   };
 }

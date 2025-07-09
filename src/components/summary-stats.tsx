@@ -8,35 +8,44 @@ interface SummaryStatsProps {
   summary: AmortizationResult["summary"];
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(value);
-};
-
 export function SummaryStats({ summary }: SummaryStatsProps) {
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat(
+      summary.currency === "PEN" ? "es-PE" : "en-US",
+      {
+        style: "currency",
+        currency: summary.currency,
+      }
+    ).format(value);
+  };
+
+  const formatPercent = (value: string | number) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num)) return value;
+    return `${(num * 100).toFixed(4)}%`;
+  };
+
   const stats = [
     {
-      title: "Total Principal Paid",
-      value: formatCurrency(summary.totalPrincipal),
-      icon: <Landmark className="h-6 w-6" />,
+      title: "VAN (Valor Actual Neto)",
+      value: formatCurrency(summary.npv),
+      icon: <Coins className="h-6 w-6" />,
     },
     {
-      title: "Total Interest Paid",
-      value: formatCurrency(summary.totalInterest),
+      title: "TIR (Tasa Interna de Retorno)",
+      value: formatPercent(summary.irr),
       icon: <Percent className="h-6 w-6" />,
     },
     {
-      title: "Total Payments",
-      value: formatCurrency(summary.totalPayment),
-      icon: <Coins className="h-6 w-6" />,
+      title: "TCEA (Tasa de Costo Efectivo Anual)",
+      value: formatPercent(summary.tcea),
+      icon: <Landmark className="h-6 w-6" />,
     },
   ];
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Summary</h2>
+      <h2 className="text-2xl font-semibold mb-4">Resultados Financieros</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <Card key={stat.title}>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AmortizationResult, BondFormValues } from "@/lib/types";
-import { calculateFrenchAmortization } from "@/lib/amortization";
+import { calculateAmortization } from "@/lib/amortization";
 import { BondForm } from "./bond-form";
 import { SummaryStats } from "./summary-stats";
 import { AmortizationSchedule } from "./amortization-schedule";
@@ -13,7 +13,7 @@ export function BondCalculator() {
   const [result, setResult] = useState<AmortizationResult | null>(null);
 
   const handleCalculate = (data: BondFormValues) => {
-    const calculationResult = calculateFrenchAmortization(data);
+    const calculationResult = calculateAmortization(data);
     setResult(calculationResult);
   };
 
@@ -26,7 +26,10 @@ export function BondCalculator() {
         {result ? (
           <>
             <SummaryStats summary={result.summary} />
-            <AmortizationSchedule schedule={result.schedule} />
+            <AmortizationSchedule
+              schedule={result.schedule}
+              currency={result.summary.currency}
+            />
           </>
         ) : (
           <Card className="flex-grow flex items-center justify-center">
@@ -35,11 +38,11 @@ export function BondCalculator() {
                 <BarChart className="w-8 h-8" />
               </div>
               <CardTitle className="text-xl font-semibold mb-2">
-                Your Cash Flow Awaits
+                Su Flujo de Caja le Espera
               </CardTitle>
               <p className="text-muted-foreground">
-                Enter your bond's details to generate the amortization schedule
-                and financial summary.
+                Ingrese los detalles de su bono para generar el flujo de caja y
+                el resumen financiero.
               </p>
             </CardContent>
           </Card>

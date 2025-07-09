@@ -10,7 +10,7 @@ export default function Home() {
       </main>
       <footer className="py-4">
         <p className="text-center text-sm text-muted-foreground">
-          Built for financial clarity.
+          Creado para la claridad financiera.
         </p>
       </footer>
     </div>

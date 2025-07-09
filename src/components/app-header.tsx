@@ -9,7 +9,7 @@ export function AppHeader() {
             <Landmark className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            Ven con Plata
+            Calculadora de Bonos
           </h1>
         </div>
       </div>

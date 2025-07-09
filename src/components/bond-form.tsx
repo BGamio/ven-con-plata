@@ -34,20 +34,41 @@ import { format } from "date-fns";
 import { CalendarIcon, Calculator } from "lucide-react";
 
 const formSchema = z.object({
-  faceValue: z.coerce.number().positive({ message: "Must be positive" }),
+  companyName: z.string().min(1, { message: "Nombre es requerido" }),
+  costOfCapital: z.coerce
+    .number()
+    .min(0, "No puede ser negativo")
+    .max(100, "No puede exceder 100"),
+  marketValue: z.coerce.number().positive("Debe ser positivo"),
+  faceValue: z.coerce.number().positive("Debe ser positivo"),
+  startDate: z.date({ required_error: "Fecha de inicio es requerida." }),
+  termInYears: z.coerce
+    .number()
+    .int("Debe ser un entero")
+    .positive("Debe ser positivo"),
   couponRate: z.coerce
     .number()
-    .min(0, { message: "Cannot be negative" })
-    .max(100, { message: "Cannot exceed 100" }),
-  maturityDate: z.date({ required_error: "A maturity date is required." }),
+    .min(0, "No puede ser negativo")
+    .max(100, "No puede exceder 100"),
+  issuerInitialCosts: z.coerce
+    .number()
+    .min(0, "No puede ser negativo")
+    .max(100, "No puede exceder 100"),
+  redemptionPremium: z.coerce
+    .number()
+    .min(0, "No puede ser negativo")
+    .max(100, "No puede exceder 100"),
   paymentFrequency: z.enum([
     "annually",
     "semi-annually",
+    "quadrimester",
     "quarterly",
+    "bimonthly",
     "monthly",
   ]),
-  gracePeriodType: z.enum(["none", "partial", "total"]),
-  gracePeriodDuration: z.coerce.number().int().min(0),
+  totalGracePeriods: z.coerce.number().int().min(0, "Debe ser 0 o mayor"),
+  partialGracePeriods: z.coerce.number().int().min(0, "Debe ser 0 o mayor"),
+  currency: z.enum(["USD", "PEN"]),
 });
 
 interface BondFormProps {
@@ -58,11 +79,19 @@ export function BondForm({ onCalculate }: BondFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      companyName: "Mi Empresa S.A.C.",
+      costOfCapital: 10.0,
+      marketValue: 100000,
       faceValue: 100000,
-      couponRate: 5.0,
+      startDate: new Date(),
+      termInYears: 5,
+      couponRate: 8.0,
+      issuerInitialCosts: 2.0,
+      redemptionPremium: 1.0,
       paymentFrequency: "annually",
-      gracePeriodType: "none",
-      gracePeriodDuration: 0,
+      totalGracePeriods: 0,
+      partialGracePeriods: 0,
+      currency: "USD",
     },
   });
 
@@ -70,161 +99,255 @@ export function BondForm({ onCalculate }: BondFormProps) {
     onCalculate(values);
   };
 
-  const gracePeriodType = form.watch("gracePeriodType");
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bond Parameters</CardTitle>
+        <CardTitle>Parámetros del Bono (Emisor)</CardTitle>
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="faceValue"
+              name="companyName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Face Value ($)</FormLabel>
+                  <FormLabel>Nombre de la Empresa</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 100000" {...field} />
+                    <Input placeholder="e.g., Mi Empresa S.A.C." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
-              name="couponRate"
+              name="currency"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Annual Coupon Rate (%)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="e.g., 5.0"
-                      step="0.1"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="maturityDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Maturity Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date <= new Date()}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="paymentFrequency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Payment Frequency</FormLabel>
+                  <FormLabel>Moneda</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select frequency" />
+                        <SelectValue placeholder="Seleccione moneda" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="annually">Annually</SelectItem>
-                      <SelectItem value="semi-annually">Semi-Annually</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="PEN">PEN</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="gracePeriodType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Grace Period</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select grace period type" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="partial">Partial (Interest-only)</SelectItem>
-                      <SelectItem value="total">Total (Capitalized)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {gracePeriodType !== 'none' && (
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="gracePeriodDuration"
+                name="faceValue"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grace Period Duration (periods)</FormLabel>
+                    <FormLabel>Valor Nominal</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="e.g., 2" {...field} />
+                      <Input type="number" {...field} />
                     </FormControl>
-                     <FormDescription>
-                      Number of initial payments under grace period terms.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
+              <FormField
+                control={form.control}
+                name="marketValue"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor Comercial</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col pt-2">
+                    <FormLabel>Fecha de Inicio</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Elija una fecha</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="termInYears"
+                render={({ field }) => (
+                  <FormItem className="pt-2">
+                    <FormLabel>Plazo (años)</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="paymentFrequency"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Frecuencia de Pago</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione frecuencia" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="annually">Anual</SelectItem>
+                      <SelectItem value="semi-annually">Semestral</SelectItem>
+                      <SelectItem value="quadrimester">Cuatrimestral</SelectItem>
+                      <SelectItem value="quarterly">Trimestral</SelectItem>
+                      <SelectItem value="bimonthly">Bimestral</SelectItem>
+                      <SelectItem value="monthly">Mensual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="couponRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tasa Cupón Anual (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="costOfCapital"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>COK Anual (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="issuerInitialCosts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Costos Iniciales Emisor (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" {...field} />
+                    </FormControl>
+                    <FormDescription>Del valor comercial.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="redemptionPremium"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prima de Vencimiento (%)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" {...field} />
+                    </FormControl>
+                    <FormDescription>Del valor nominal.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="partialGracePeriods"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Periodos Gracia Parcial</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="totalGracePeriods"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Periodos Gracia Total</FormLabel>
+                    <FormControl>
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Button type="submit" className="w-full" size="lg">
               <Calculator className="mr-2 h-4 w-4" />
-              Calculate Cash Flow
+              Calcular Flujo de Caja
             </Button>
           </form>
         </Form>

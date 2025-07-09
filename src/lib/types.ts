@@ -1,25 +1,44 @@
 export interface BondFormValues {
+  companyName: string;
+  costOfCapital: number;
+  marketValue: number;
   faceValue: number;
+  startDate: Date;
+  termInYears: number;
   couponRate: number;
-  maturityDate: Date;
-  paymentFrequency: "annually" | "semi-annually" | "quarterly" | "monthly";
-  gracePeriodType: "none" | "partial" | "total";
-  gracePeriodDuration: number;
+  issuerInitialCosts: number;
+  redemptionPremium: number;
+  paymentFrequency:
+    | "annually"
+    | "semi-annually"
+    | "quadrimester"
+    | "quarterly"
+    | "bimonthly"
+    | "monthly";
+  totalGracePeriods: number;
+  partialGracePeriods: number;
+  currency: "USD" | "PEN";
 }
 
 export interface AmortizationPeriod {
   period: number;
-  payment: number;
+  initialBalance: number;
   interest: number;
   principal: number;
-  balance: number;
+  payment: number; // cuota
+  finalBalance: number;
+  issuerCashFlow: number;
 }
 
 export interface AmortizationResult {
   schedule: AmortizationPeriod[];
   summary: {
+    npv: number;
+    irr: string;
+    tcea: string;
+    totalPayment: number;
     totalInterest: number;
     totalPrincipal: number;
-    totalPayment: number;
+    currency: "USD" | "PEN";
   };
 }

@@ -17,31 +17,45 @@ import { ScrollArea } from "./ui/scroll-area";
 
 interface AmortizationScheduleProps {
   schedule: AmortizationPeriod[];
+  currency: "USD" | "PEN";
 }
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-};
-
-export function AmortizationSchedule({ schedule }: AmortizationScheduleProps) {
+export function AmortizationSchedule({
+  schedule,
+  currency,
+}: AmortizationScheduleProps) {
   const { toast } = useToast();
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat(currency === "PEN" ? "es-PE" : "en-US", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   const handleExport = () => {
-    const headers = ["Period", "Payment", "Interest", "Principal", "Balance"];
+    const headers = [
+      "Periodo",
+      "Saldo Inicial",
+      "Interés",
+      "Amortización",
+      "Cuota",
+      "Saldo Final",
+      "Flujo Emisor",
+    ];
     const csvContent = [
       headers.join(","),
       ...schedule.map((row) =>
         [
           row.period,
-          row.payment.toFixed(2),
+          row.initialBalance.toFixed(2),
           row.interest.toFixed(2),
           row.principal.toFixed(2),
-          row.balance.toFixed(2),
+          row.payment.toFixed(2),
+          row.finalBalance.toFixed(2),
+          row.issuerCashFlow.toFixed(2),
         ].join(",")
       ),
     ].join("\n");
@@ -50,37 +64,43 @@ export function AmortizationSchedule({ schedule }: AmortizationScheduleProps) {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "amortization_schedule.csv");
+    link.setAttribute("download", "flujo_de_caja_bono.csv");
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
     toast({
-      title: "Export Successful",
-      description: "Your amortization schedule has been downloaded.",
+      title: "Exportación Exitosa",
+      description: "El flujo de caja de su bono ha sido descargado.",
     });
   };
+
+  if (schedule.length === 0) {
+    return null;
+  }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Amortization Schedule</CardTitle>
+        <CardTitle>Flujo de Caja y Amortización</CardTitle>
         <Button variant="outline" size="sm" onClick={handleExport}>
           <Download className="mr-2 h-4 w-4" />
-          Export to CSV
+          Exportar a CSV
         </Button>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-96 w-full">
+        <ScrollArea className="h-[32rem] w-full">
           <Table>
             <TableHeader className="sticky top-0 bg-secondary">
               <TableRow>
-                <TableHead className="w-[100px] text-center">Period</TableHead>
-                <TableHead className="text-right">Payment</TableHead>
-                <TableHead className="text-right">Interest</TableHead>
-                <TableHead className="text-right">Principal</TableHead>
-                <TableHead className="text-right">Remaining Balance</TableHead>
+                <TableHead className="text-center">Periodo</TableHead>
+                <TableHead className="text-right">Saldo Inicial</TableHead>
+                <TableHead className="text-right">Interés</TableHead>
+                <TableHead className="text-right">Amortización</TableHead>
+                <TableHead className="text-right">Cuota</TableHead>
+                <TableHead className="text-right">Saldo Final</TableHead>
+                <TableHead className="text-right">Flujo Emisor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -90,7 +110,7 @@ export function AmortizationSchedule({ schedule }: AmortizationScheduleProps) {
                     {row.period}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(row.payment)}
+                    {formatCurrency(row.initialBalance)}
                   </TableCell>
                   <TableCell className="text-right">
                     {formatCurrency(row.interest)}
@@ -99,7 +119,13 @@ export function AmortizationSchedule({ schedule }: AmortizationScheduleProps) {
                     {formatCurrency(row.principal)}
                   </TableCell>
                   <TableCell className="text-right">
-                    {formatCurrency(row.balance)}
+                    {formatCurrency(row.payment)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(row.finalBalance)}
+                  </TableCell>
+                  <TableCell className="text-right font-semibold">
+                    {formatCurrency(row.issuerCashFlow)}
                   </TableCell>
                 </TableRow>
               ))}
